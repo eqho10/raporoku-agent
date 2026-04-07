@@ -1,0 +1,46 @@
+================================
+    ÖRNEK MARKET TİC. LTD. ŞTİ
+    Atatürk Cad. No:15 Kadıköy
+    İSTANBUL
+    VKN: 1234567890
+    Kadıköy V.D.
+================================
+         Z RAPORU
+Z NO         : 0142
+TARİH        : 30.03.2026
+SAAT         : 23:45
+KASA NO      : 01
+KASİYER      : KASİYER 1
+--------------------------------
+DEPARTMAN SATIŞLARI
+  DEPT 1 T.GIDA       *1.250,00
+  DEPT 2 İÇECEK         *450,00
+  DEPT 3 TEMİZLİK       *320,00
+  DEPT 4 KIRTASİYE      *180,75
+  DEPT 5 DİĞER          *125,50
+--------------------------------
+TOPLAM SATIŞ         *2.326,25
+İNDİRİM                *45,00
+İADE                   *22,50
+İPTAL                    *0,00
+NET SATIŞ            *2.258,75
+--------------------------------
+KDV DÖKÜM
+  % 1 MATRAH:     0,00  KDV:   0,00
+  % 8 MATRAH: 1.250,00  KDV: 100,00
+  %10 MATRAH:   450,00  KDV:  45,00
+  %20 MATRAH:   558,75  KDV: 111,75
+TOPLAM KDV             *256,75
+--------------------------------
+ÖDEME
+  NAKİT               *1.458,75
+  KREDİ KARTI           *800,00
+TOPLAM TAHSİLAT      *2.258,75
+--------------------------------
+FİŞ SAYISI               47
+GT:              *125.840,50
+EKÜ NO: 0001
+================================
+MF: AB123456789
+CİHAZ SERİ: HG-20220142
+================================

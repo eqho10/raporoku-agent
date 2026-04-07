@@ -1,0 +1,45 @@
+****************************************
+*    GÜNEŞ KAFE
+*    İstiklal Cad. No:42
+*    Beyoğlu / İSTANBUL
+*    VKN: 9876543210
+*    Beyoğlu V.D.
+****************************************
+        MALİ RAPOR
+        Z RAPOR NO: 0087
+        TARİH: 30/03/2026
+        SAAT: 00:15
+        TERMİNAL NO: IG-3001245
+----------------------------------------
+SATIŞ BİLGİLERİ
+  DEPT 1 SICAK İÇECEK     *3.420,00
+  DEPT 2 SOĞUK İÇECEK     *1.890,00
+  DEPT 3 YEMEK             *5.670,00
+  DEPT 4 TATLI             *1.240,00
+  DEPT 5 DİĞER               *380,00
+----------------------------------------
+BRÜT SATIŞ            *12.600,00
+İNDİRİM TOPLAM           *350,00
+İADE TOPLAM               *120,00
+İADE ADET                       2
+İPTAL TOPLAM                *0,00
+NET SATIŞ             *12.130,00
+----------------------------------------
+KDV %1 MATRAH:       0,00  KDV:    0,00
+KDV %8 MATRAH:   5.310,00  KDV:  424,80
+KDV %10MATRAH:   1.890,00  KDV:  189,00
+KDV %20MATRAH:   4.930,00  KDV:  986,00
+KDV TOPLAM             *1.599,80
+----------------------------------------
+TAHSİLAT BİLGİLERİ
+  NAKİT                *4.630,00
+  K.KART               *6.500,00
+  YEMEK KARTI          *1.000,00
+TOPLAM               *12.130,00
+----------------------------------------
+FİŞ SAYISI                   124
+FİŞ İPTAL SAYISI               0
+GT:                 *487.250,00
+EKU NO: 0001
+MH: CD987654321
+****************************************

@@ -1,0 +1,43 @@
+================================
+    HATALI MARKET TİC. LTD. ŞTİ
+    Test Cad. No:1 Kadıköy
+    İSTANBUL
+    VKN: 9999999999
+    Kadıköy V.D.
+================================
+         Z RAPORU
+Z NO         : 9999
+TARİH        : 02.04.2026
+SAAT         : 23:59
+KASA NO      : 01
+KASİYER      : KASİYER 1
+--------------------------------
+DEPARTMAN SATIŞLARI
+  DEPT 1 GIDA          *1.800,00
+  DEPT 2 İÇECEK          *500,00
+  DEPT 3 TEMİZLİK        *700,00
+--------------------------------
+TOPLAM SATIŞ          *3.000,00
+İNDİRİM                  *0,00
+İADE                      *0,00
+İPTAL                     *0,00
+NET SATIŞ             *3.000,00
+--------------------------------
+KDV DÖKÜM
+  % 5 MATRAH:   800,00  KDV:  40,00
+  % 8 MATRAH: 1.000,00  KDV:  80,00
+  %20 MATRAH:     0,00  KDV: 140,00
+TOPLAM KDV               *300,00
+--------------------------------
+ÖDEME
+  NAKİT               *1.500,00
+  KREDİ KARTI            *800,00
+TOPLAM TAHSİLAT       *2.300,00
+--------------------------------
+FİŞ SAYISI               35
+GT:              *85.000,00
+EKÜ NO: 0001
+================================
+MF: TEST12345
+CİHAZ SERİ: HG-TEST001
+================================

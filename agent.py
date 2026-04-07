@@ -41,7 +41,7 @@ except ImportError:
 
 # ─── Config ────────────────────────────────────────
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 APP_NAME = "RaporOku Agent"
 DEFAULT_BAUD = 9600
 ENCODING = "cp857"
@@ -52,6 +52,13 @@ CONFIG_DIR.mkdir(exist_ok=True)
 CONFIG_FILE = CONFIG_DIR / "config.json"
 LOG_DIR = CONFIG_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
+
+# Z Raporu Arşiv Dizini — günlük klasör yapısı
+if sys.platform == "win32":
+    DATA_DIR = Path("C:/RaporOku")
+else:
+    DATA_DIR = Path.home() / "RaporOku"
+DATA_DIR.mkdir(exist_ok=True)
 
 DEFAULT_API_URL = "https://raporoku.com"
 
@@ -373,20 +380,90 @@ def send_to_api(raw_text: str, z_data: dict) -> dict:
         return {"status": "error", "message": str(e)}
 
 
-def save_local(z_data: dict, raw_text: str):
-    """Z raporu verisini lokal dosyaya kaydet."""
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    z_no = z_data.get("z_no", "unknown")
+def save_local(z_data: dict, raw_text: str, synced: bool = False):
+    """
+    Z raporu verisini günlük klasöre kaydet.
+    Yapı:
+      C:/RaporOku/
+        2026-04-06/
+          Z-0847_23-45-00.json     ← parse edilmiş veri (API uyumlu)
+          Z-0847_23-45-00.txt      ← ham ESC/POS text
+          Z-0847_23-45-00.synced   ← API'ye gönderildi işareti (varsa)
+    """
+    now = datetime.now()
+    z_no = z_data.get("z_no", "000")
+    date_str = now.strftime("%Y-%m-%d")
+    time_str = now.strftime("%H-%M-%S")
+    filename = f"Z-{z_no}_{time_str}"
 
-    json_path = LOG_DIR / f"z_{z_no}_{ts}.json"
+    # Günlük klasör
+    day_dir = DATA_DIR / date_str
+    day_dir.mkdir(exist_ok=True)
+
+    # JSON — raporoku.com API formatında
+    json_path = day_dir / f"{filename}.json"
+    export_data = {
+        **z_data,
+        "kaynak": "agent-serial",
+        "agent_version": VERSION,
+        "saved_at": now.isoformat(),
+        "device_key": DEVICE_KEY[:8] + "..." if DEVICE_KEY else "",
+    }
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(z_data, f, ensure_ascii=False, indent=2)
+        json.dump(export_data, f, ensure_ascii=False, indent=2)
 
-    txt_path = LOG_DIR / f"z_{z_no}_{ts}.txt"
+    # Raw text
+    txt_path = day_dir / f"{filename}.txt"
     with open(txt_path, "w", encoding="utf-8") as f:
         f.write(raw_text)
 
+    # Senkronizasyon işareti
+    if synced:
+        (day_dir / f"{filename}.synced").touch()
+
     log.info(f"Lokal kayıt: {json_path}")
+    return json_path
+
+
+def sync_pending():
+    """
+    API'ye gönderilememiş Z raporlarını yeniden dene.
+    .synced dosyası olmayan JSON'ları bulur ve gönderir.
+    """
+    if not DEVICE_KEY:
+        log.warning("Cihaz anahtarı yok — senkronizasyon atlandı.")
+        return
+
+    pending = []
+    for day_dir in sorted(DATA_DIR.iterdir()):
+        if not day_dir.is_dir():
+            continue
+        for json_file in sorted(day_dir.glob("Z-*.json")):
+            synced_file = json_file.with_suffix(".synced")
+            if not synced_file.exists():
+                pending.append(json_file)
+
+    if not pending:
+        log.info("Tüm raporlar senkronize — bekleyen yok.")
+        return
+
+    log.info(f"{len(pending)} bekleyen rapor bulundu, senkronize ediliyor...")
+
+    for json_file in pending:
+        txt_file = json_file.with_suffix(".txt")
+        if not txt_file.exists():
+            log.warning(f"Raw text bulunamadı: {txt_file}")
+            continue
+
+        raw_text = txt_file.read_text(encoding="utf-8")
+        result = send_to_api(raw_text, {})
+
+        if result.get("status") == "ok":
+            json_file.with_suffix(".synced").touch()
+            log.info(f"✓ Senkronize: {json_file.name}")
+        else:
+            log.warning(f"✗ Başarısız: {json_file.name} — sonra tekrar denenecek")
+        time.sleep(1)  # API'yi yormamak için
 
 
 # ─── Port İşlemleri ───────────────────────────────
@@ -473,14 +550,24 @@ def monitor_port(port: str, baud: int = DEFAULT_BAUD):
 
 
 def _process_z_report(buffer: str):
-    """Z raporunu parse et, kaydet, API'ye gönder."""
+    """Z raporunu parse et, lokal kaydet, API'ye gönder."""
     log.info(f">>> Z RAPORU TAMAMLANDI ({len(buffer)} karakter) <<<")
     z_data = parse_z_rapor_text(buffer)
     log.info(f"Parse: Z#{z_data['z_no']}, Toplam: {z_data['toplam_tutar']}, "
              f"Nakit: {z_data['nakit_tutar']}, Kart: {z_data['kredi_karti_tutar']}")
-    save_local(z_data, buffer)
+
+    # Önce API'ye gönder
     api_result = send_to_api(buffer, z_data)
-    log.info(f"API: {api_result.get('status', 'unknown')}")
+    synced = api_result.get("status") == "ok"
+
+    # Lokal kaydet (synced flag ile)
+    save_local(z_data, buffer, synced=synced)
+
+    if synced:
+        log.info(f"✓ Z#{z_data['z_no']} → API + Lokal kayıt tamam")
+    else:
+        log.warning(f"✗ Z#{z_data['z_no']} → API başarısız, lokal kaydedildi — sonra senkronize edilecek")
+
     log.info("Z raporu bekleniyor...\n")
 
 
@@ -508,6 +595,7 @@ def main():
     parser.add_argument("--list-ports", "-l", action="store_true", help="Mevcut portları listele")
     parser.add_argument("--file", "-f", help="Test: text dosyasından Z raporu parse et")
     parser.add_argument("--setup", "-s", action="store_true", help="İlk kurulum sihirbazı")
+    parser.add_argument("--sync", action="store_true", help="Bekleyen raporları API'ye gönder")
     parser.add_argument("--api-url", help="RaporOku API URL")
     parser.add_argument("--device-key", help="Cihaz anahtarı")
 
@@ -534,6 +622,10 @@ def main():
         list_ports()
         return
 
+    if args.sync:
+        sync_pending()
+        return
+
     if args.file:
         process_file(args.file)
         return
@@ -544,6 +636,10 @@ def main():
         print("İlk kurulum için: raporoku-agent --setup")
         print()
         sys.exit(1)
+
+    # Başlangıçta bekleyen raporları senkronize et
+    log.info(f"Veri dizini: {DATA_DIR}")
+    sync_pending()
 
     port = args.port or auto_detect_port()
     if not port:
