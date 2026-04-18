@@ -25,7 +25,16 @@ jobs:
       - name: Build EXE
         run: pyinstaller --onefile --name raporoku-agent --console agent.py
 
+      - name: Generate SHA256 checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 dist/raporoku-agent.exe).Hash.ToLower()
+          Set-Content -Path dist/raporoku-agent.exe.sha256 -Value "$hash  raporoku-agent.exe" -NoNewline
+          Write-Host "SHA256: $hash"
+
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/raporoku-agent.exe
+          files: |
+            dist/raporoku-agent.exe
+            dist/raporoku-agent.exe.sha256
