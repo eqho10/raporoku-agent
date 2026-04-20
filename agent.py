@@ -41,7 +41,7 @@ except ImportError:
 
 # ─── Config ────────────────────────────────────────
 
-VERSION = "2.1.0"
+VERSION = "2.3.0"
 APP_NAME = "RaporOku Agent"
 DEFAULT_BAUD = 9600
 ENCODING = "cp857"
@@ -380,6 +380,39 @@ def send_to_api(raw_text: str, z_data: dict) -> dict:
         return {"status": "error", "message": str(e)}
 
 
+def send_heartbeat() -> bool:
+    """Cihazın canlı olduğunu RaporOku'ya bildir. Sessizce fail."""
+    if not DEVICE_KEY:
+        return False
+    try:
+        resp = requests.post(
+            f"{API_URL}/v1/firms/device/heartbeat",
+            json={"agent_version": VERSION, "platform": sys.platform},
+            headers={"X-Device-Key": DEVICE_KEY, "Content-Type": "application/json"},
+            timeout=10,
+        )
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
+def heartbeat_loop(interval_sec: int = 300):
+    """5dk'da bir heartbeat gönderir. İlk atışı 5sn sonra yapar (boot lag tolere)."""
+    import threading
+    def _run():
+        time.sleep(5)
+        while True:
+            try:
+                ok = send_heartbeat()
+                log.debug(f"Heartbeat: {'OK' if ok else 'FAIL'}")
+            except Exception as e:
+                log.debug(f"Heartbeat exception: {e}")
+            time.sleep(interval_sec)
+    t = threading.Thread(target=_run, daemon=True, name="heartbeat")
+    t.start()
+    return t
+
+
 def save_local(z_data: dict, raw_text: str, synced: bool = False):
     """
     Z raporu verisini günlük klasöre kaydet.
@@ -586,6 +619,18 @@ def process_file(filepath: str):
 # ─── CLI ──────────────────────────────────────────
 
 def main():
+    # Pending update varsa önce onu uygula (swap + relaunch → bu process ölür)
+    try:
+        from updater import apply_pending_update, start_update_loop  # type: ignore
+    except ImportError:
+        try:
+            from .updater import apply_pending_update, start_update_loop  # type: ignore
+        except Exception:
+            apply_pending_update = lambda: False  # type: ignore
+            start_update_loop = lambda *a, **kw: None  # type: ignore
+    if apply_pending_update():
+        sys.exit(0)
+
     parser = argparse.ArgumentParser(
         description=f"{APP_NAME} v{VERSION} — Yazarkasa Z Raporu Otomatik Yakalayıcı",
         epilog="Örnek: raporoku-agent --port COM3",
@@ -645,6 +690,12 @@ def main():
     if not port:
         log.error("Seri port bulunamadı! --port ile belirtin veya --list-ports ile kontrol edin.")
         sys.exit(1)
+
+    # 5dk'da bir heartbeat — overview gerçek online/offline görsün
+    heartbeat_loop()
+
+    # Arka planda auto-update (sadece Windows frozen .exe'de aktif)
+    start_update_loop(VERSION)
 
     monitor_port(port, args.baud)
 
